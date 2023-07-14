@@ -6,6 +6,7 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
+// Returns minimum of given numbers, or NaN, if numbers is empty.
 func Min[T constraints.Float | constraints.Integer](numbers ...T) T {
 	if len(numbers) == 0 {
 		return T(math.NaN())
@@ -17,6 +18,7 @@ func Min[T constraints.Float | constraints.Integer](numbers ...T) T {
 	return extr
 }
 
+// Returns maximum of given numbers, or NaN, if numbers is empty.
 func Max[T constraints.Float | constraints.Integer](numbers ...T) T {
 	if len(numbers) == 0 {
 		return T(math.NaN())
@@ -28,6 +30,7 @@ func Max[T constraints.Float | constraints.Integer](numbers ...T) T {
 	return extr
 }
 
+// Returns sum of given numbers.
 func Sum[T constraints.Float | constraints.Integer](numbers ...T) T {
 	var sum T = 0
 	for _, number := range numbers {
@@ -36,6 +39,7 @@ func Sum[T constraints.Float | constraints.Integer](numbers ...T) T {
 	return sum
 }
 
+// Returns greater commn divisor (GCD) of given numbers, or NaN, if numbers is empty.
 func GCD[T constraints.Integer](numbers ...T) T {
 	if len(numbers) == 0 {
 		return T(math.NaN())
