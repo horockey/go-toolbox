@@ -1,4 +1,5 @@
 # go-toolbox
+
 [![Linters](https://github.com/horockey/go-toolbox/actions/workflows/main.yaml/badge.svg)](https://github.com/horockey/go-toolbox/actions/workflows/main.yaml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/horockey/go-toolbox)](https://goreportcard.com/report/github.com/horockey/go-toolbox)
 
