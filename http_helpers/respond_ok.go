@@ -14,6 +14,10 @@ type errorMessage struct {
 // Respond with status 200.
 // If marshaling error occures, response with error and code 500 will be sent.
 func RespondOK(w http.ResponseWriter, data any) error {
+	if data == nil {
+		w.WriteHeader(http.StatusOK)
+		return nil
+	}
 	b, err := json.Marshal(data)
 	if err != nil {
 		err = fmt.Errorf("marshaling json: %w", err)
