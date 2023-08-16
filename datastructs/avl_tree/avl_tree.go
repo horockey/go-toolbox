@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/horockey/go-toolbox/datastructs/internal/comparer"
+	"github.com/horockey/go-toolbox/datastructs/pkg/comparer"
+	"github.com/horockey/go-toolbox/datastructs/pkg/comparer/string_comparer"
 )
 
 var ErrNotFound error = errors.New("unable to find element for given key")
@@ -22,7 +23,7 @@ type avlTree[K any, V any] struct {
 // Creates new AVL tree with string key type.
 func New[V any]() *avlTree[string, V] {
 	return &avlTree[string, V]{
-		comp: &comparer.StringComparer{},
+		comp: string_comparer.New(),
 	}
 }
 
@@ -81,7 +82,26 @@ func (t *avlTree[K, V]) Remove(key K) error {
 // Returns all keys that the tree contains in ascending order.
 // Order is defined by comparer.
 func (t *avlTree[K, V]) Keys() []K {
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+
 	return t.keys(t.root)
+}
+
+// Returns number of nodes in tree.
+func (t *avlTree[K, V]) Size() uint {
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+
+	return t.size
+}
+
+// Return the height of tree root.
+func (t *avlTree[K, V]) Height() uint {
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+
+	return t.root.height
 }
 
 func (t *avlTree[K, V]) insert(subroot *node[K, V], key K, val V) error {
