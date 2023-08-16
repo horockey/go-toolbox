@@ -49,7 +49,7 @@ func (t *avlTree[K, V]) Insert(key K, val V) error {
 }
 
 // If tree contains given key, returns corresponding value.
-// Returns ErrNotFounf otherwise.
+// Returns ErrNotFound otherwise.
 func (t *avlTree[K, V]) Get(key K) (V, error) {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
@@ -60,6 +60,28 @@ func (t *avlTree[K, V]) Get(key K) (V, error) {
 	}
 
 	return n.Value, nil
+}
+
+// If tree contains given key, removes KV pair from itself.
+// Returns ErrNotFound otherwise.
+func (t *avlTree[K, V]) Remove(key K) error {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	n := t.get(key)
+	if n == nil {
+		return ErrNotFound
+	}
+	t.remove(n)
+
+	t.size--
+	return nil
+}
+
+// Returns all keys that the tree contains in ascending order.
+// Order is defined by comparer.
+func (t *avlTree[K, V]) Keys() []K {
+	return t.keys(t.root)
 }
 
 func (t *avlTree[K, V]) insert(subroot *node[K, V], key K, val V) error {
@@ -108,6 +130,59 @@ func (t *avlTree[K, V]) insert(subroot *node[K, V], key K, val V) error {
 	return nil
 }
 
+func (t *avlTree[K, V]) remove(subroot *node[K, V]) {
+	if subroot == nil {
+		return
+	}
+
+	if subroot.parent == nil {
+		t.root = nil
+		return
+	}
+
+	if subroot.isLeaf() ||
+		subroot.hasOnlyLeft() ||
+		subroot.hasOnlyRight() {
+		var child *node[K, V]
+		if subroot.hasOnlyLeft() {
+			child = subroot.left
+		}
+		if subroot.hasOnlyRight() {
+			child = subroot.right
+		}
+		switch subroot {
+		case subroot.parent.right:
+			subroot.parent.right = child
+		case subroot.parent.left:
+			subroot.parent.left = child
+		}
+		if child != nil {
+			child.parent = subroot.parent
+		}
+	} else {
+		n := t.removeMin(subroot.right)
+		// keep all pointers on their place, just susbtitute the payload
+		subroot.Key = n.Key
+		subroot.Value = n.Value
+	}
+
+	for cur := subroot.parent; cur != nil; cur = cur.parent {
+		t.balance(cur)
+	}
+}
+
+func (t *avlTree[K, V]) removeMin(subroot *node[K, V]) *node[K, V] {
+	if subroot.isLeaf() || subroot.hasOnlyRight() {
+		// is the most left node
+		t.remove(subroot)
+		return subroot
+	}
+
+	n := t.removeMin(subroot.left)
+	t.balance(subroot)
+	return n
+}
+
 func (t *avlTree[K, V]) get(key K) *node[K, V] {
 	cur := t.root
 	for cur != nil {
@@ -123,16 +198,28 @@ func (t *avlTree[K, V]) get(key K) *node[K, V] {
 	return nil
 }
 
+func (t *avlTree[K, V]) keys(subroot *node[K, V]) []K {
+	if subroot == nil {
+		return []K{}
+	}
+
+	res := append(t.keys(subroot.left), subroot.Key)
+	res = append(res, t.keys(subroot.right)...)
+	return res
+}
+
 func (t *avlTree[K, V]) balance(subroot *node[K, V]) {
 	subroot.fixHeight()
 	switch subroot.balanceFactor() {
 	case 2:
 		if subroot.right.balanceFactor() < 0 {
+			// turns to greater left rotation
 			t.rightRotation(subroot.right)
 		}
 		t.leftRotation(subroot)
 	case -2:
 		if subroot.left.balanceFactor() > 0 {
+			// turns to greater right rotation
 			t.leftRotation(subroot.left)
 		}
 		t.rightRotation(subroot)

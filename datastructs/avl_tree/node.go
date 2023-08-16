@@ -19,6 +19,14 @@ func (n *node[K, V]) isLeaf() bool {
 	return n.left == nil && n.right == nil
 }
 
+func (n *node[K, V]) hasOnlyLeft() bool {
+	return n.left != nil && n.right == nil
+}
+
+func (n *node[K, V]) hasOnlyRight() bool {
+	return n.left == nil && n.right != nil
+}
+
 func (n *node[K, V]) balanceFactor() int {
 	l, r := 0, 0
 	if n.left != nil {
