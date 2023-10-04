@@ -1,15 +1,13 @@
 package prometheus_helpers
 
 import (
-	"errors"
-	"fmt"
 	"time"
 
 	"github.com/horockey/go-toolbox/options"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-func NewHistOpts(name string, opts ...options.Option[prometheus.HistogramOpts]) (*prometheus.HistogramOpts, error) {
+func NewHistOpts(name string, opts ...options.Option[prometheus.HistogramOpts]) *prometheus.HistogramOpts {
 	histOpts := prometheus.HistogramOpts{
 		Name: name,
 		Buckets: []float64{
@@ -23,18 +21,13 @@ func NewHistOpts(name string, opts ...options.Option[prometheus.HistogramOpts]) 
 		},
 	}
 
-	if err := options.ApplyOptions(&histOpts, opts...); err != nil {
-		return nil, fmt.Errorf("applying opts: %w", err)
-	}
+	options.ApplyOptions(&histOpts, opts...)
 
-	return &histOpts, nil
+	return &histOpts
 }
 
 func HistOptsWithNamespace(ns string) options.Option[prometheus.HistogramOpts] {
 	return func(target *prometheus.HistogramOpts) error {
-		if ns == "" {
-			return errors.New("got empty namespace")
-		}
 		target.Namespace = ns
 		return nil
 	}
@@ -42,9 +35,6 @@ func HistOptsWithNamespace(ns string) options.Option[prometheus.HistogramOpts] {
 
 func HistOptsWithSubsystem(ss string) options.Option[prometheus.HistogramOpts] {
 	return func(target *prometheus.HistogramOpts) error {
-		if ss == "" {
-			return errors.New("got empty subsystem")
-		}
 		target.Subsystem = ss
 		return nil
 	}
@@ -52,9 +42,6 @@ func HistOptsWithSubsystem(ss string) options.Option[prometheus.HistogramOpts] {
 
 func HistOptsWithHelp(h string) options.Option[prometheus.HistogramOpts] {
 	return func(target *prometheus.HistogramOpts) error {
-		if h == "" {
-			return errors.New("got empty help")
-		}
 		target.Help = h
 		return nil
 	}

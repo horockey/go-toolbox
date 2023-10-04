@@ -28,6 +28,8 @@ linters:
 linters-settings:
   errcheck:
     check-type-assertions: true
+    exclude-functions:
+      - github.com/horockey/go-toolbox/options.ApplyOptions
   govet:
     check-shadowing: false
   tagalign:

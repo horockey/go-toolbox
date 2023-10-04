@@ -2,13 +2,12 @@ package prometheus_helpers
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/horockey/go-toolbox/options"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-func NewSummaryOpts(name string, opts ...options.Option[prometheus.SummaryOpts]) (*prometheus.SummaryOpts, error) {
+func NewSummaryOpts(name string, opts ...options.Option[prometheus.SummaryOpts]) *prometheus.SummaryOpts {
 	sumOpts := prometheus.SummaryOpts{
 		Name: name,
 		Objectives: map[float64]float64{
@@ -19,11 +18,9 @@ func NewSummaryOpts(name string, opts ...options.Option[prometheus.SummaryOpts])
 		},
 	}
 
-	if err := options.ApplyOptions(&sumOpts, opts...); err != nil {
-		return nil, fmt.Errorf("applying opts: %w", err)
-	}
+	options.ApplyOptions(&sumOpts, opts...)
 
-	return &sumOpts, nil
+	return &sumOpts
 }
 
 func SummaryOptsWithNamespace(ns string) options.Option[prometheus.SummaryOpts] {
