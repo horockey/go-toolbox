@@ -4,7 +4,7 @@ import (
 	"github.com/horockey/go-toolbox/math"
 )
 
-type node[K any, V any] struct {
+type node[K, V any] struct {
 	Key   K
 	Value V
 

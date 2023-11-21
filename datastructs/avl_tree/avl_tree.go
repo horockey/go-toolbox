@@ -6,12 +6,11 @@ import (
 	"sync"
 
 	"github.com/horockey/go-toolbox/datastructs/pkg/comparer"
-	"github.com/horockey/go-toolbox/datastructs/pkg/comparer/string_comparer"
 )
 
 var ErrNotFound error = errors.New("unable to find element for given key")
 
-type avlTree[K any, V any] struct {
+type avlTree[K, V any] struct {
 	mu sync.RWMutex
 
 	comparer comparer.Comparer[K]
@@ -23,13 +22,13 @@ type avlTree[K any, V any] struct {
 // Creates new AVL tree with string key type.
 func New[V any]() *avlTree[string, V] {
 	return &avlTree[string, V]{
-		comparer: string_comparer.New(),
+		comparer: comparer.NewStringComparer(),
 	}
 }
 
 // Creates new AVL tree with custom key type.
 // Corresponding Comparer required.
-func NewWithCustomKey[K any, V any](comp comparer.Comparer[K]) *avlTree[K, V] {
+func NewWithCustomKey[K, V any](comp comparer.Comparer[K]) *avlTree[K, V] {
 	return &avlTree[K, V]{
 		comparer: comp,
 	}

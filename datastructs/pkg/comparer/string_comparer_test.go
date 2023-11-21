@@ -1,9 +1,9 @@
-package string_comparer_test
+package comparer_test
 
 import (
 	"testing"
 
-	"github.com/horockey/go-toolbox/datastructs/pkg/comparer/string_comparer"
+	"github.com/horockey/go-toolbox/datastructs/pkg/comparer"
 	"github.com/stretchr/testify/require"
 )
 
@@ -20,7 +20,7 @@ var cases = []struct {
 }
 
 func TestStringComparer(t *testing.T) {
-	comp := string_comparer.New()
+	comp := comparer.NewStringComparer()
 
 	for _, c := range cases {
 		res := comp.Compare(c.l, c.r)
