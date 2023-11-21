@@ -15,6 +15,14 @@ type node[K any, V any] struct {
 	height uint
 }
 
+func newNode[K, V any](key K, val V) *node[K, V] {
+	return &node[K, V]{
+		Key:    key,
+		Value:  val,
+		height: 1,
+	}
+}
+
 func (n *node[K, V]) isLeaf() bool {
 	return n.left == nil && n.right == nil
 }
@@ -40,7 +48,7 @@ func (n *node[K, V]) balanceFactor() int {
 
 func (n *node[K, V]) fixHeight() {
 	if n.isLeaf() {
-		n.height = 0
+		n.height = 1
 		return
 	}
 

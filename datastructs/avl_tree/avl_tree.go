@@ -14,7 +14,7 @@ var ErrNotFound error = errors.New("unable to find element for given key")
 type avlTree[K any, V any] struct {
 	mu sync.RWMutex
 
-	comp comparer.Comparer[K]
+	comparer comparer.Comparer[K]
 
 	root *node[K, V]
 	size uint
@@ -23,7 +23,7 @@ type avlTree[K any, V any] struct {
 // Creates new AVL tree with string key type.
 func New[V any]() *avlTree[string, V] {
 	return &avlTree[string, V]{
-		comp: string_comparer.New(),
+		comparer: string_comparer.New(),
 	}
 }
 
@@ -31,7 +31,7 @@ func New[V any]() *avlTree[string, V] {
 // Corresponding Comparer required.
 func NewWithCustomKey[K any, V any](comp comparer.Comparer[K]) *avlTree[K, V] {
 	return &avlTree[K, V]{
-		comp: comp,
+		comparer: comp,
 	}
 }
 
@@ -79,6 +79,15 @@ func (t *avlTree[K, V]) Remove(key K) error {
 	return nil
 }
 
+// Removes all keys from tree.
+func (t *avlTree[K, V]) Clear() {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	t.root = nil
+	t.size = 0
+}
+
 // Returns all keys that the tree contains in ascending order.
 // Order is defined by comparer.
 func (t *avlTree[K, V]) Keys() []K {
@@ -101,16 +110,17 @@ func (t *avlTree[K, V]) Height() uint {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 
+	if t.root == nil {
+		return 0
+	}
+
 	return t.root.height
 }
 
 func (t *avlTree[K, V]) insert(subroot *node[K, V], key K, val V) error {
 	if subroot == nil {
 		if subroot == t.root {
-			t.root = &node[K, V]{
-				Key:   key,
-				Value: val,
-			}
+			t.root = newNode(key, val)
 			return nil
 		}
 		return errors.New("given subroot is nil")
@@ -118,7 +128,7 @@ func (t *avlTree[K, V]) insert(subroot *node[K, V], key K, val V) error {
 
 	var nextNode *node[K, V]
 	var nextNodeIsLeft bool
-	switch t.comp.Compare(key, subroot.Key) {
+	switch t.comparer.Compare(key, subroot.Key) {
 	case -1, 0:
 		nextNode = subroot.right
 		nextNodeIsLeft = false
@@ -132,11 +142,8 @@ func (t *avlTree[K, V]) insert(subroot *node[K, V], key K, val V) error {
 			return err
 		}
 	} else {
-		nextNode = &node[K, V]{
-			Key:    key,
-			Value:  val,
-			parent: subroot,
-		}
+		nextNode = newNode(key, val)
+		nextNode.parent = subroot
 		switch nextNodeIsLeft {
 		case true:
 			subroot.left = nextNode
@@ -155,11 +162,6 @@ func (t *avlTree[K, V]) remove(subroot *node[K, V]) {
 		return
 	}
 
-	if subroot.parent == nil {
-		t.root = nil
-		return
-	}
-
 	if subroot.isLeaf() ||
 		subroot.hasOnlyLeft() ||
 		subroot.hasOnlyRight() {
@@ -170,12 +172,19 @@ func (t *avlTree[K, V]) remove(subroot *node[K, V]) {
 		if subroot.hasOnlyRight() {
 			child = subroot.right
 		}
+
+		if subroot.parent == nil {
+			t.root = child
+			return
+		}
+
 		switch subroot {
 		case subroot.parent.right:
 			subroot.parent.right = child
 		case subroot.parent.left:
 			subroot.parent.left = child
 		}
+
 		if child != nil {
 			child.parent = subroot.parent
 		}
@@ -206,7 +215,7 @@ func (t *avlTree[K, V]) removeMin(subroot *node[K, V]) *node[K, V] {
 func (t *avlTree[K, V]) get(key K) *node[K, V] {
 	cur := t.root
 	for cur != nil {
-		switch t.comp.Compare(key, cur.Key) {
+		switch t.comparer.Compare(key, cur.Key) {
 		case -1:
 			cur = cur.right
 		case 1:
@@ -255,7 +264,9 @@ func (t *avlTree[K, V]) leftRotation(subroot *node[K, V]) {
 	}
 
 	subroot.right = temp.left
-	subroot.right.parent = subroot
+	if subroot.right != nil {
+		subroot.right.parent = subroot
+	}
 
 	temp.left = subroot
 	temp.parent = subroot.parent
@@ -283,7 +294,9 @@ func (t *avlTree[K, V]) rightRotation(subroot *node[K, V]) {
 	}
 
 	subroot.left = temp.right
-	subroot.left.parent = subroot
+	if subroot.left != nil {
+		subroot.left.parent = subroot
+	}
 
 	temp.right = subroot
 	temp.parent = subroot.parent
