@@ -6,9 +6,8 @@ import (
 	"sync"
 
 	"github.com/horockey/go-toolbox/datastructs/pkg/comparer"
+	"github.com/horockey/go-toolbox/datastructs/trees"
 )
-
-var ErrNotFound error = errors.New("unable to find element for given key")
 
 type avlTree[K, V any] struct {
 	mu sync.RWMutex
@@ -56,7 +55,7 @@ func (t *avlTree[K, V]) Get(key K) (V, error) {
 
 	n := t.get(key)
 	if n == nil {
-		return *new(V), ErrNotFound
+		return *new(V), trees.NotFoundError[K]{GivenKey: key}
 	}
 
 	return n.Value, nil
@@ -70,7 +69,7 @@ func (t *avlTree[K, V]) Remove(key K) error {
 
 	n := t.get(key)
 	if n == nil {
-		return ErrNotFound
+		return trees.NotFoundError[K]{GivenKey: key}
 	}
 	t.remove(n)
 
