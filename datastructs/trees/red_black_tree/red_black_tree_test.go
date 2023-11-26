@@ -20,6 +20,7 @@ func TestCRUD(t *testing.T) {
 
 			_, err = blackHeight(tree.root)
 			require.NoError(t, err)
+			require.Equal(t, ColorBlack, tree.root.color)
 		}
 
 		require.Equal(t, N, tree.Size())
@@ -42,6 +43,9 @@ func TestCRUD(t *testing.T) {
 
 			_, err = blackHeight(tree.root)
 			require.NoError(t, err)
+			if tree.root != nil {
+				require.Equal(t, ColorBlack, tree.root.color)
+			}
 		}
 
 		require.Equal(t, 0, tree.Size())
