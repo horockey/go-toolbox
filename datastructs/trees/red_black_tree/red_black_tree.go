@@ -80,6 +80,14 @@ func (tree *redBlackTree[K, V]) Remove(key K) error {
 	return nil
 }
 
+func (tree *redBlackTree[K, V]) Clear() {
+	tree.mu.Lock()
+	defer tree.mu.Unlock()
+
+	tree.root = nil
+	tree.size = 0
+}
+
 func (tree *redBlackTree[K, V]) insert(subroot *node[K, V], key K, val V) error {
 	if subroot == nil {
 		if subroot == tree.root {
@@ -114,6 +122,8 @@ func (tree *redBlackTree[K, V]) insert(subroot *node[K, V], key K, val V) error 
 			subroot.right = son
 		}
 
+		tree.ballanceAfterInsertion(son)
+
 		return nil
 	}
 
@@ -122,37 +132,46 @@ func (tree *redBlackTree[K, V]) insert(subroot *node[K, V], key K, val V) error 
 		return err
 	}
 
-	tree.ballanceAfterInsertion(son)
-
 	return nil
 }
 
 func (tree *redBlackTree[K, V]) remove(n *node[K, V]) {
-	rmNodeColor := n.color
-	child := &node[K, V]{}
+	rmNode := n
 
 	defer func() {
-		if rmNodeColor == ColorBlack {
-			tree.ballanceTreeAfterRemoval(child)
+		if rmNode.color == ColorBlack {
+			tree.ballanceAfterRemoval(rmNode)
 		}
 	}()
 
 	transplantNode := func(from, to *node[K, V]) {
-		if to == tree.root {
-			tree.root = from
+		if to == nil {
 			return
 		}
-		switch n.direction {
+
+		if to == tree.root {
+			tree.root = from
+			if from != nil {
+				from.parent = nil
+				from.direction = trees.DirectionNoDir
+			}
+			return
+		}
+
+		switch to.direction {
 		case trees.DirectionLeft:
 			to.parent.left = from
 		case trees.DirectionRight:
 			to.parent.right = from
 		}
-		from.parent = to.parent
+		if from != nil {
+			from.parent = to.parent
+			from.direction = to.direction
+		}
 	}
 
 	if n.hasOneChild() || n.hasNoChildren() {
-
+		var child *node[K, V]
 		switch {
 		case n.hasOnlyLeft():
 			child = n.left
@@ -160,68 +179,72 @@ func (tree *redBlackTree[K, V]) remove(n *node[K, V]) {
 			child = n.right
 		}
 
-		transplantNode(n, child)
+		transplantNode(child, n)
 		return
 	}
 
 	minNode := tree.getLeftmost(n.right)
 	n.Key = minNode.Key
 	n.Value = minNode.Value
-	rmNodeColor = minNode.color
+	rmNode = minNode
 
+	var child *node[K, V]
 	switch {
-	case n.hasOnlyLeft():
+	case minNode.hasOnlyLeft():
 		child = minNode.left
 	default:
 		child = minNode.right
 	}
-	transplantNode(minNode, child)
+	transplantNode(child, minNode)
 }
 
 func (tree *redBlackTree[K, V]) ballanceAfterInsertion(newNode *node[K, V]) {
+	defer func() {
+		tree.root.color = ColorBlack
+	}()
+
 	if newNode == tree.root {
-		newNode.color = ColorBlack
 		return
 	}
 
-	if newNode.parent.color == ColorBlack {
-		// no need to ballance
-		return
-	}
-
-	if newNode.uncle() != nil && newNode.uncle().color == ColorRed {
-		newNode.parent.color = ColorBlack
-		newNode.uncle().color = ColorBlack
-		if newNode.grandParent() != tree.root {
+	for newNode != tree.root && newNode.parent.color == ColorRed {
+		if newNode.uncle() != nil && newNode.uncle().color == ColorRed {
+			newNode.parent.color = ColorBlack
+			newNode.uncle().color = ColorBlack
 			newNode.grandParent().color = ColorRed
+			newNode = newNode.grandParent()
+			continue
 		}
-		return
-	}
 
-	// zigzag to line
-	if newNode.direction != newNode.parent.direction {
-		temp := newNode.parent
-		if newNode.direction == trees.DirectionRight {
-			tree.leftRotation(newNode.parent)
-		} else {
-			tree.rightRotation(newNode.parent)
+		// zigzag to line
+		if newNode.direction != newNode.parent.direction {
+			temp := newNode.parent
+			if newNode.direction == trees.DirectionRight {
+				tree.leftRotation(newNode.parent)
+			} else {
+				tree.rightRotation(newNode.parent)
+			}
+			newNode = temp
 		}
-		newNode = temp
-	}
 
-	newNode.parent.color = ColorBlack
-	switch newNode.parent.direction {
-	case trees.DirectionLeft:
-		tree.rightRotation(newNode.grandParent())
-	case trees.DirectionRight:
-		tree.leftRotation(newNode.parent)
+		newNode.parent.color = ColorBlack
+		newNode.grandParent().color = ColorRed
+		switch newNode.parent.direction {
+		case trees.DirectionLeft:
+			tree.rightRotation(newNode.grandParent())
+		case trees.DirectionRight:
+			tree.leftRotation(newNode.grandParent())
+		}
 	}
 }
 
-func (tree *redBlackTree[K, V]) ballanceTreeAfterRemoval(rmNode *node[K, V]) {
+func (tree *redBlackTree[K, V]) ballanceAfterRemoval(rmNode *node[K, V]) {
 	for rmNode != tree.root && rmNode.color == ColorBlack {
 		brother := rmNode.brother()
 		switch rmNode.direction {
+		default:
+			rmNode = tree.root
+			break
 		case trees.DirectionLeft:
 			if brother.color == ColorRed {
 				brother.color = ColorBlack
@@ -229,22 +252,28 @@ func (tree *redBlackTree[K, V]) ballanceTreeAfterRemoval(rmNode *node[K, V]) {
 				tree.leftRotation(rmNode.parent)
 				brother = rmNode.parent.right
 			}
-			if brother.left.color == ColorBlack && brother.right.color == ColorBlack {
+			if (brother.left == nil || brother.left.color == ColorBlack) &&
+				(brother.right == nil || brother.right.color == ColorBlack) {
 				brother.color = ColorRed
 				rmNode = rmNode.parent
-			} else {
-				if brother.right.color == ColorBlack {
-					brother.left.color = ColorBlack
-					brother.color = ColorRed
-					tree.rightRotation(brother)
-					brother = rmNode.parent.right
-				}
-				brother.color = rmNode.parent.color
-				rmNode.parent.color = ColorBlack
-				rmNode.right.color = ColorBlack
-				tree.leftRotation(rmNode.parent)
-				rmNode = tree.root
+				continue
 			}
+			if brother.right == nil || brother.right.color == ColorBlack {
+				if brother.left != nil {
+					brother.left.color = ColorBlack
+				}
+				brother.color = ColorRed
+				tree.rightRotation(brother)
+				brother = rmNode.parent.right
+			}
+			brother.color = rmNode.parent.color
+			rmNode.parent.color = ColorBlack
+			if brother.right != nil {
+				brother.right.color = ColorBlack
+			}
+			tree.leftRotation(rmNode.parent)
+			rmNode = tree.root
+
 		case trees.DirectionRight:
 			if brother.color == ColorRed {
 				brother.color = ColorBlack
@@ -252,26 +281,34 @@ func (tree *redBlackTree[K, V]) ballanceTreeAfterRemoval(rmNode *node[K, V]) {
 				tree.rightRotation(rmNode.parent)
 				brother = rmNode.parent.left
 			}
-			if brother.left.color == ColorBlack && brother.right.color == ColorBlack {
+			if (brother.left == nil || brother.left.color == ColorBlack) &&
+				(brother.right == nil || brother.right.color == ColorBlack) {
 				brother.color = ColorRed
 				rmNode = rmNode.parent
-			} else {
-				if brother.left.color == ColorBlack {
-					brother.right.color = ColorBlack
-					brother.color = ColorRed
-					tree.leftRotation(brother)
-					brother = rmNode.parent.left
-				}
-				brother.color = rmNode.parent.color
-				rmNode.parent.color = ColorBlack
-				rmNode.left.color = ColorBlack
-				tree.rightRotation(rmNode.parent)
-				rmNode = tree.root
+				continue
 			}
+			if brother.left == nil || brother.left.color == ColorBlack {
+				if brother.right != nil {
+					brother.right.color = ColorBlack
+				}
+				brother.color = ColorRed
+				tree.leftRotation(brother)
+				brother = rmNode.parent.left
+			}
+			brother.color = rmNode.parent.color
+			rmNode.parent.color = ColorBlack
+			if brother.left != nil {
+				brother.left.color = ColorBlack
+			}
+			tree.rightRotation(rmNode.parent)
+			rmNode = tree.root
 		}
+
 	}
 
-	rmNode.color = ColorBlack
+	if rmNode != nil {
+		rmNode.color = ColorBlack
+	}
 }
 
 func (t *redBlackTree[K, V]) getLeftmost(subroot *node[K, V]) *node[K, V] {
@@ -308,21 +345,26 @@ func (t *redBlackTree[K, V]) leftRotation(subroot *node[K, V]) {
 	subroot.right = temp.left
 	if subroot.right != nil {
 		subroot.right.parent = subroot
+		subroot.right.direction = trees.DirectionRight
 	}
 
 	temp.left = subroot
 	temp.parent = subroot.parent
 	if subroot.parent != nil {
-		switch subroot {
-		case subroot.parent.left:
+		switch subroot.direction {
+		case trees.DirectionLeft:
 			subroot.parent.left = temp
-		case subroot.parent.right:
+		case trees.DirectionRight:
 			subroot.parent.right = temp
 		}
+
+		temp.direction = subroot.direction
 	} else {
 		t.root = temp
+		temp.direction = trees.DirectionNoDir
 	}
 
+	subroot.direction = trees.DirectionLeft
 	subroot.parent = temp
 }
 
@@ -335,20 +377,25 @@ func (t *redBlackTree[K, V]) rightRotation(subroot *node[K, V]) {
 	subroot.left = temp.right
 	if subroot.left != nil {
 		subroot.left.parent = subroot
+		subroot.left.direction = trees.DirectionLeft
 	}
 
 	temp.right = subroot
 	temp.parent = subroot.parent
 	if subroot.parent != nil {
-		switch subroot {
-		case subroot.parent.left:
+		switch subroot.direction {
+		case trees.DirectionLeft:
 			subroot.parent.left = temp
-		case subroot.parent.right:
+		case trees.DirectionRight:
 			subroot.parent.right = temp
 		}
+
+		temp.direction = subroot.direction
 	} else {
 		t.root = temp
+		temp.direction = trees.DirectionNoDir
 	}
 
+	subroot.direction = trees.DirectionRight
 	subroot.parent = temp
 }
