@@ -3,15 +3,12 @@ package red_black_tree
 import (
 	"errors"
 	"fmt"
-	"sync"
 
 	"github.com/horockey/go-toolbox/datastructs/pkg/comparer"
 	"github.com/horockey/go-toolbox/datastructs/trees"
 )
 
 type redBlackTree[K, V any] struct {
-	mu sync.RWMutex
-
 	comparer comparer.Comparer[K]
 
 	root *node[K, V]
@@ -34,9 +31,6 @@ func NewWithCustomKey[K, V any](comp comparer.Comparer[K]) *redBlackTree[K, V] {
 }
 
 func (tree *redBlackTree[K, V]) Get(key K) (V, error) {
-	tree.mu.RLock()
-	defer tree.mu.RUnlock()
-
 	n, err := tree.getNode(key)
 	if err != nil {
 		return *new(V), fmt.Errorf("getting element from tree: %w", err)
@@ -46,16 +40,10 @@ func (tree *redBlackTree[K, V]) Get(key K) (V, error) {
 }
 
 func (tree *redBlackTree[K, V]) Size() int {
-	tree.mu.RLock()
-	defer tree.mu.RUnlock()
-
 	return tree.size
 }
 
 func (tree *redBlackTree[K, V]) Insert(key K, val V) error {
-	tree.mu.Lock()
-	defer tree.mu.Unlock()
-
 	if err := tree.insert(tree.root, key, val); err != nil {
 		return fmt.Errorf("inserting new element: %w", err)
 	}
@@ -66,9 +54,6 @@ func (tree *redBlackTree[K, V]) Insert(key K, val V) error {
 }
 
 func (tree *redBlackTree[K, V]) Remove(key K) error {
-	tree.mu.Lock()
-	defer tree.mu.Unlock()
-
 	n, err := tree.getNode(key)
 	if err != nil {
 		return fmt.Errorf("searching element in tree: %w", err)
@@ -81,9 +66,6 @@ func (tree *redBlackTree[K, V]) Remove(key K) error {
 }
 
 func (tree *redBlackTree[K, V]) Clear() {
-	tree.mu.Lock()
-	defer tree.mu.Unlock()
-
 	tree.root = nil
 	tree.size = 0
 }

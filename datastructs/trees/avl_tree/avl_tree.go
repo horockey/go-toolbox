@@ -3,15 +3,12 @@ package avl_tree
 import (
 	"errors"
 	"fmt"
-	"sync"
 
 	"github.com/horockey/go-toolbox/datastructs/pkg/comparer"
 	"github.com/horockey/go-toolbox/datastructs/trees"
 )
 
 type avlTree[K, V any] struct {
-	mu sync.RWMutex
-
 	comparer comparer.Comparer[K]
 
 	root *node[K, V]
@@ -36,9 +33,6 @@ func NewWithCustomKey[K, V any](comp comparer.Comparer[K]) *avlTree[K, V] {
 // Adds new element to AVL tree.
 // Fixes balance, if necessary.
 func (t *avlTree[K, V]) Insert(key K, val V) error {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-
 	if err := t.insert(t.root, key, val); err != nil {
 		return fmt.Errorf("inserting new element: %w", err)
 	}
@@ -50,9 +44,6 @@ func (t *avlTree[K, V]) Insert(key K, val V) error {
 // If tree contains given key, returns corresponding value.
 // Returns ErrNotFound otherwise.
 func (t *avlTree[K, V]) Get(key K) (V, error) {
-	t.mu.RLock()
-	defer t.mu.RUnlock()
-
 	n := t.get(key)
 	if n == nil {
 		return *new(V), trees.NotFoundError[K]{GivenKey: key}
@@ -64,9 +55,6 @@ func (t *avlTree[K, V]) Get(key K) (V, error) {
 // If tree contains given key, removes KV pair from itself.
 // Returns ErrNotFound otherwise.
 func (t *avlTree[K, V]) Remove(key K) error {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-
 	n := t.get(key)
 	if n == nil {
 		return trees.NotFoundError[K]{GivenKey: key}
@@ -79,9 +67,6 @@ func (t *avlTree[K, V]) Remove(key K) error {
 
 // Removes all keys from tree.
 func (t *avlTree[K, V]) Clear() {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-
 	t.root = nil
 	t.size = 0
 }
@@ -89,25 +74,16 @@ func (t *avlTree[K, V]) Clear() {
 // Returns all keys that the tree contains in ascending order.
 // Order is defined by comparer.
 func (t *avlTree[K, V]) Keys() []K {
-	t.mu.RLock()
-	defer t.mu.RUnlock()
-
 	return t.keys(t.root)
 }
 
 // Returns number of nodes in tree.
 func (t *avlTree[K, V]) Size() uint {
-	t.mu.RLock()
-	defer t.mu.RUnlock()
-
 	return t.size
 }
 
 // Return the height of tree root.
 func (t *avlTree[K, V]) Height() uint {
-	t.mu.RLock()
-	defer t.mu.RUnlock()
-
 	if t.root == nil {
 		return 0
 	}

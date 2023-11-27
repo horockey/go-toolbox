@@ -2,11 +2,6 @@ package red_black_tree
 
 import "github.com/horockey/go-toolbox/datastructs/trees"
 
-type Node[K, V any] struct {
-	Key   K
-	Value V
-}
-
 type node[K, V any] struct {
 	Key   K
 	Value V
@@ -24,13 +19,6 @@ func newNode[K, V any](key K, val V) *node[K, V] {
 		Key:   key,
 		Value: val,
 		color: ColorRed,
-	}
-}
-
-func (n *node[K, V]) ToPublic() *Node[K, V] {
-	return &Node[K, V]{
-		Key:   n.Key,
-		Value: n.Value,
 	}
 }
 
