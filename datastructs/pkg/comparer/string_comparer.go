@@ -1,12 +1,10 @@
-package string_comparer
+package comparer
 
-import "github.com/horockey/go-toolbox/datastructs/pkg/comparer"
-
-var _ comparer.Comparer[string] = &stringComparer{}
+var _ Comparer[string] = &stringComparer{}
 
 type stringComparer struct{}
 
-func New() *stringComparer {
+func NewStringComparer() *stringComparer {
 	return &stringComparer{}
 }
 
