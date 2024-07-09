@@ -10,14 +10,14 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-var _ cli.Flag = &customTimestampFlag{}
+var _ cli.Flag = &CustomTimestampFlag{}
 
-type customTimestampFlag struct {
+type CustomTimestampFlag struct {
 	cli.TimestampFlag
 	Layouts []string
 }
 
-func (f *customTimestampFlag) Apply(set *flag.FlagSet) error {
+func (f *CustomTimestampFlag) Apply(set *flag.FlagSet) error {
 	if len(f.Layouts) == 0 {
 		f.Layouts = DefaultLayouts()
 	}
@@ -33,7 +33,7 @@ func (f *customTimestampFlag) Apply(set *flag.FlagSet) error {
 	return resErr
 }
 
-func (f *customTimestampFlag) String() string {
+func (f *CustomTimestampFlag) String() string {
 	return f.TimestampFlag.String() +
 		" Available time formats: " +
 		strings.Join(f.Layouts, ", ")
