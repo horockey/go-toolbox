@@ -4,6 +4,8 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/urfave/cli/v2"
 )
@@ -16,6 +18,9 @@ type customTimestampFlag struct {
 }
 
 func (f *customTimestampFlag) Apply(set *flag.FlagSet) error {
+	if len(f.Layouts) == 0 {
+		f.Layouts = DefaultLayouts()
+	}
 	var resErr error
 	for _, layout := range f.Layouts {
 		f.Layout = layout
@@ -26,4 +31,21 @@ func (f *customTimestampFlag) Apply(set *flag.FlagSet) error {
 		return nil
 	}
 	return resErr
+}
+
+func (f *customTimestampFlag) String() string {
+	return f.TimestampFlag.String() +
+		" Available time formats: " +
+		strings.Join(f.Layouts, ", ")
+}
+
+func DefaultLayouts() []string {
+	return []string{
+		time.RFC3339,
+		time.DateTime,
+		time.TimeOnly,
+		time.Kitchen,
+		"15:04",
+		"3:04:05PM",
+	}
 }
