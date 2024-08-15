@@ -14,16 +14,19 @@ import (
 
 type Server struct {
 	registry *prometheus.Registry
-	server   *http.Server
+
+	server            *http.Server
+	needToStartServer bool
 
 	shutdownTimeout time.Duration
 }
 
 func New(addr string, opts ...options.Option[Server]) (*Server, error) {
 	s := Server{
-		registry:        prometheus.NewRegistry(),
-		server:          &http.Server{Addr: addr},
-		shutdownTimeout: time.Second,
+		registry:          prometheus.NewRegistry(),
+		server:            &http.Server{Addr: addr},
+		needToStartServer: true,
+		shutdownTimeout:   time.Second,
 	}
 
 	if err := options.ApplyOptions(&s, opts...); err != nil {
@@ -51,6 +54,11 @@ func (s *Server) Start(ctx context.Context) error {
 	))
 	errs := make(chan error)
 
+	if !s.needToStartServer {
+		<-ctx.Done()
+		return fmt.Errorf("ruuning context: %w", ctx.Err())
+	}
+
 	go func() {
 		if err := s.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			errs <- err
@@ -62,16 +70,18 @@ func (s *Server) Start(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("running server: %w", err)
 		}
+		return nil
+
 	case <-ctx.Done():
+		resErr := fmt.Errorf("running context: %w", ctx.Err())
+
 		sdCtx, cancel := context.WithTimeout(context.TODO(), s.shutdownTimeout)
 		defer cancel()
 
 		if err := s.server.Shutdown(sdCtx); err != nil {
-			return fmt.Errorf("shutting down server: %w", err)
+			resErr = errors.Join(resErr, fmt.Errorf("shutting down server: %w", err))
 		}
 
-		return nil
+		return resErr
 	}
-
-	return nil
 }

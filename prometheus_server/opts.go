@@ -25,6 +25,7 @@ func WithServer(serv *http.Server) options.Option[Server] {
 			return errors.New("givern server is nil")
 		}
 		target.server = serv
+		target.needToStartServer = false
 		return nil
 	}
 }
