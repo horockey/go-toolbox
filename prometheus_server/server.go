@@ -46,17 +46,27 @@ func (s *Server) Register(cols ...prometheus.Collector) error {
 }
 
 func (s *Server) Start(ctx context.Context) error {
-	http.Handle("/metrics", promhttp.HandlerFor(
+	baseHandler := s.server.Handler
+	metricsHandler := promhttp.HandlerFor(
 		s.registry,
 		promhttp.HandlerOpts{
 			ErrorHandling: promhttp.ContinueOnError,
 		},
-	))
+	)
+
+	s.server.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/metrics" {
+			metricsHandler.ServeHTTP(w, r)
+			return
+		}
+
+		baseHandler.ServeHTTP(w, r)
+	})
 	errs := make(chan error)
 
 	if !s.needToStartServer {
 		<-ctx.Done()
-		return fmt.Errorf("ruuning context: %w", ctx.Err())
+		return fmt.Errorf("running context: %w", ctx.Err())
 	}
 
 	go func() {
