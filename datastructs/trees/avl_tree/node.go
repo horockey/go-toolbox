@@ -1,9 +1,5 @@
 package avl_tree
 
-import (
-	"github.com/horockey/go-toolbox/math"
-)
-
 type node[K, V any] struct {
 	Key   K
 	Value V
@@ -60,5 +56,5 @@ func (n *node[K, V]) fixHeight() {
 		r = n.right.height
 	}
 
-	n.height = math.Max(l, r) + 1
+	n.height = max(l, r) + 1
 }
