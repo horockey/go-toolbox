@@ -3,7 +3,7 @@ package comparer_test
 import (
 	"testing"
 
-	"github.com/horockey/go-toolbox/datastructs/pkg/comparer"
+	"github.com/horockey/go-toolbox/datastructs/comparer"
 	"github.com/stretchr/testify/require"
 )
 

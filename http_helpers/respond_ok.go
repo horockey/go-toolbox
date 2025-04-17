@@ -2,7 +2,6 @@ package http_helpers
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 )
@@ -20,17 +19,7 @@ func RespondOK(w http.ResponseWriter, data any) error {
 	}
 	b, err := json.Marshal(data)
 	if err != nil {
-		err = fmt.Errorf("marshaling json: %w", err)
-		respErr := RespondWithErr(
-			w,
-			http.StatusInternalServerError,
-			err,
-		)
-		if respErr != nil {
-			err = errors.Join(err, respErr)
-		}
-
-		return fmt.Errorf("responding: %w", err)
+		return fmt.Errorf("marshaling json: %w", err)
 	}
 
 	_, err = w.Write(b)

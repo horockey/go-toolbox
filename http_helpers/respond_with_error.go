@@ -15,8 +15,7 @@ func RespondWithErr(w http.ResponseWriter, statusCode int, err error) error {
 	}
 	b, err := json.Marshal(errorMessage{err.Error()})
 	if err != nil {
-		err = fmt.Errorf("wrapping errror message to json: %w", err)
-		return err
+		return fmt.Errorf("wrapping errror message to json: %w", err)
 	}
 
 	w.WriteHeader(statusCode)

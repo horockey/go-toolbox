@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/horockey/go-toolbox/datastructs/pkg/comparer"
+	"github.com/horockey/go-toolbox/datastructs/comparer"
 	"github.com/horockey/go-toolbox/datastructs/trees"
 )
 
