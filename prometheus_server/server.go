@@ -47,6 +47,10 @@ func (s *Server) Register(cols ...prometheus.Collector) error {
 
 func (s *Server) Start(ctx context.Context) error {
 	baseHandler := s.server.Handler
+	if baseHandler == nil {
+		baseHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+	}
+
 	metricsHandler := promhttp.HandlerFor(
 		s.registry,
 		promhttp.HandlerOpts{
@@ -59,7 +63,6 @@ func (s *Server) Start(ctx context.Context) error {
 			metricsHandler.ServeHTTP(w, r)
 			return
 		}
-
 		baseHandler.ServeHTTP(w, r)
 	})
 	errs := make(chan error)
